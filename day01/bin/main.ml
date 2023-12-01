@@ -25,12 +25,12 @@ let concat_first_and_last_digit is =
 
 let part1 lines =
   print_endline "part1";
-  let transform x =
+  let line_to_number x =
     x |> split_chars |> List.filter is_digit |> concat_first_and_last_digit
     |> int_of_string
   in
 
-  lines |> List.map transform |> sum |> string_of_int |> print_endline
+  lines |> List.map line_to_number |> sum |> string_of_int |> print_endline
 
 let valid_strings =
   [|
@@ -65,7 +65,7 @@ let parse_digit buffer =
 let part2 lines =
   print_endline "\npart2";
 
-  let transform x =
+  let line_to_number x =
     x |> split_chars
     |> List.fold_left
          (fun (buffer, acc) x ->
@@ -78,7 +78,7 @@ let part2 lines =
          ("", [])
     |> fun (_, y) -> concat_first_and_last_digit (List.rev y) |> int_of_string
   in
-  lines |> List.map transform |> sum |> string_of_int |> print_endline
+  lines |> List.map line_to_number |> sum |> string_of_int |> print_endline
 
 let () =
   let lines = read_lines stdin in
