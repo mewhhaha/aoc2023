@@ -23,6 +23,15 @@ let concat_first_and_last_digit is =
   let fst, lst = List.fold_left aux ("", "") is in
   fst ^ lst
 
+let part1 lines =
+  print_endline "part1";
+  let transform x =
+    x |> split_chars |> List.filter is_digit |> concat_first_and_last_digit
+    |> int_of_string
+  in
+
+  lines |> List.map transform |> sum |> string_of_int |> print_endline
+
 let valid_strings =
   [|
     "0";
@@ -46,15 +55,6 @@ let valid_strings =
     "eight";
     "nine";
   |]
-
-let part1 lines =
-  print_endline "part1";
-  let transform x =
-    x |> split_chars |> List.filter is_digit |> concat_first_and_last_digit
-    |> int_of_string
-  in
-
-  lines |> List.map transform |> sum |> string_of_int |> print_endline
 
 let parse_digit buffer =
   let index =
