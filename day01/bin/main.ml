@@ -13,8 +13,6 @@ let split_chars str =
   let rec aux i acc = if i < 0 then acc else aux (i - 1) (str.[i] :: acc) in
   aux (String.length str - 1) []
 
-let concat_chars a b = Printf.sprintf "%c%c" a b
-
 let concat_first_and_last_digit is =
   let aux (fst, _) x =
     let str = String.make 1 x in
