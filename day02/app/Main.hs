@@ -55,7 +55,7 @@ part2 games = do
     power :: Game -> Int
     power (_, rs) = count Red rs * count Green rs * count Blue rs
     count :: Color -> [Round] -> Int
-    count c = List.maximum . mapMaybe (fmap fst . Main.find (\(_, c') -> c == c'))
+    count c = List.maximum . fmap fst . mapMaybe (Main.find (\(_, c') -> c == c'))
 
 main :: IO ()
 main = do
