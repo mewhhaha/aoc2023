@@ -19,8 +19,10 @@ data Round = Round
   }
   deriving (Eq, Show)
 
+applyRound f (Round r1 g1 b1) (Round r2 g2 b2) = Round (f r1 r2) (f g1 g2) (f b1 b2)
+
 instance Semigroup Round where
-  (Round r1 g1 b1) <> (Round r2 g2 b2) = Round (r1 + r2) (g1 + g2) (b1 + b2)
+  (<>) = applyRound (+)
 
 instance Monoid Round where
   mempty = Round 0 0 0
@@ -59,7 +61,9 @@ part2 games = do
   print $ "Part 2: " ++ show value
   where
     power :: Game -> Int
-    power (_, rs) = let Round {red, green, blue} = List.foldl' (\(Round r1 g1 b1) (Round r2 g2 b2) -> Round (max r1 r2) (max g1 g2) (max b1 b2)) mempty rs in red * green * blue
+    power (_, rs) =
+      let Round {red, green, blue} = List.foldl' (applyRound max) mempty rs
+       in red * green * blue
 
 main :: IO ()
 main = do
