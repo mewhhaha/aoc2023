@@ -56,7 +56,7 @@ part2 games = do
   where
     power :: Game -> Int
     power (_, rs) =
-      let Round {red, green, blue} = List.foldl' (applyRound max) (Round 0 0 0) rs
+      let Round {red, green, blue} = List.foldl1 (applyRound max) rs
        in red * green * blue
 
 main :: IO ()
