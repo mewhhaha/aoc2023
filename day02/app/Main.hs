@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
@@ -5,17 +6,24 @@ module Main where
 import Data.Bifunctor (Bifunctor (bimap, first))
 import Data.Char (isDigit, isSpace)
 import Data.Maybe (Maybe (Just, Nothing), catMaybes, mapMaybe)
+import Data.Monoid as Monoid (Monoid, mappend, mempty)
 import Data.Text as Text
 import Data.Text.IO (getContents)
 import GHC.List as List
-import Prelude (Bool, Eq, Foldable (minimum), IO, Int, Read, Show (show), error, filter, fmap, fst, not, print, read, snd, sum, ($), (*), (+), (.), (<$>), (<=), (==))
+import Prelude (Bool, Eq, Foldable (minimum), IO, Int, Read, Semigroup, Show (show), error, filter, fmap, fst, max, not, print, read, snd, sum, ($), (&&), (*), (+), (.), (<$>), (<=), (<>), (==))
 
-data Color = Red | Green | Blue
+data Round = Round
+  { red :: Int,
+    green :: Int,
+    blue :: Int
+  }
   deriving (Eq, Show)
 
-type Bag = [Color]
+instance Semigroup Round where
+  (Round r1 g1 b1) <> (Round r2 g2 b2) = Round (r1 + r2) (g1 + g2) (b1 + b2)
 
-type Round = [(Int, Color)]
+instance Monoid Round where
+  mempty = Round 0 0 0
 
 type Game = (Int, [Round])
 
@@ -27,10 +35,10 @@ parse = bimap parseGame (parseRounds . Text.tail) . Text.breakOn ":" . Text.filt
   where
     parseGame = tread . Text.filter isDigit
     parseRounds = fmap parseRound . Text.splitOn ";"
-    parseRound = fmap (bimap tread parseColor . Text.span isDigit) . Text.splitOn ","
-    parseColor "green" = Green
-    parseColor "red" = Red
-    parseColor "blue" = Blue
+    parseRound = List.foldl1 mappend . (fmap (parseColor . Text.span isDigit) . Text.splitOn ",")
+    parseColor (n, "green") = Round {red = 0, green = tread n, blue = 0}
+    parseColor (n, "red") = Round {red = tread n, green = 0, blue = 0}
+    parseColor (n, "blue") = Round {red = 0, green = 0, blue = tread n}
 
 part1 :: [Game] -> IO ()
 part1 games = do
@@ -38,10 +46,8 @@ part1 games = do
   print $ "Part 1: " ++ show value
   where
     possible :: Game -> Bool
-    possible (_, rs) = List.all (List.all enough) rs
-    enough (count, Red) = count <= 12
-    enough (count, Green) = count <= 13
-    enough (count, Blue) = count <= 14
+    possible (_, rs) = List.all enough rs
+    enough Round {red, green, blue} = red <= 12 && green <= 13 && blue <= 14
 
 find :: (a -> Bool) -> [a] -> Maybe a
 find p [] = Nothing
@@ -53,9 +59,7 @@ part2 games = do
   print $ "Part 2: " ++ show value
   where
     power :: Game -> Int
-    power (_, rs) = count Red rs * count Green rs * count Blue rs
-    count :: Color -> [Round] -> Int
-    count c = List.maximum . fmap fst . mapMaybe (Main.find (\(_, c') -> c == c'))
+    power (_, rs) = let Round {red, green, blue} = List.foldl' (\(Round r1 g1 b1) (Round r2 g2 b2) -> Round (max r1 r2) (max g1 g2) (max b1 b2)) mempty rs in red * green * blue
 
 main :: IO ()
 main = do
