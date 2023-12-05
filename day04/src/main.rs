@@ -53,7 +53,7 @@ fn part2(lines: &Vec<String>) {
         .iter()
         .sum::<usize>();
 
-    println!("Part1: {}", number_of_scratchcards);
+    println!("Part2: {}", number_of_scratchcards);
 }
 
 fn main() {
