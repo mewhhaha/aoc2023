@@ -29,10 +29,10 @@ fn part1(lines: &Vec<String>) {
                 .count();
 
             if n_matching_numbers == 0 {
-                return 0;
+                0
+            } else {
+                2_u32.pow(n_matching_numbers as u32 - 1)
             }
-
-            2_u32.pow(n_matching_numbers as u32 - 1)
         })
         .sum::<u32>();
 
@@ -57,9 +57,9 @@ fn part2(lines: &Vec<String>) {
         })
         .rev()
         .fold(vec![], |mut ns, n| {
-            let cards = 1 + ns[ns.len() - n..].iter().sum::<usize>();
+            let cards = 1 + ns.iter().skip(ns.len().saturating_sub(n)).sum::<usize>();
             ns.push(cards);
-            return ns;
+            ns
         })
         .iter()
         .sum::<usize>();
