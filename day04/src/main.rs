@@ -15,7 +15,7 @@ fn numbers(line: &str) -> Vec<i32> {
         .collect()
 }
 
-fn part1(lines: Vec<String>) {
+fn part1(lines: &Vec<String>) {
     let pile_worth = lines
         .iter()
         .filter_map(|line| line.split_once("|"))
@@ -32,16 +32,43 @@ fn part1(lines: Vec<String>) {
                 return 0;
             }
 
-            (2 as u32).pow(n_matching_numbers as u32 - 1)
+            2_u32.pow(n_matching_numbers as u32 - 1)
         })
         .sum::<u32>();
 
     println!("Part1: {}", pile_worth);
 }
 
-fn part2() {}
+// Isn't this similar to fibonacci numbers?
+fn part2(lines: &Vec<String>) {
+    let number_of_scratchcards = lines
+        .iter()
+        .filter_map(|line| line.split_once("|"))
+        .map(|(a, b)| {
+            let winning_numbers = &numbers(a)[1..];
+            let my_numbers = &numbers(b)[0..];
+
+            let n_matching_numbers = my_numbers
+                .iter()
+                .filter(|n| winning_numbers.contains(n))
+                .count();
+
+            return n_matching_numbers;
+        })
+        .rev()
+        .fold(vec![], |mut ns, n| {
+            let cards = 1 + ns[ns.len() - n..].iter().sum::<usize>();
+            ns.push(cards);
+            return ns;
+        })
+        .iter()
+        .sum::<usize>();
+
+    println!("Part1: {}", number_of_scratchcards);
+}
 
 fn main() {
     let lines = io::stdin().lines().map(|l| l.unwrap()).collect::<Vec<_>>();
-    part1(lines);
+    part1(&lines);
+    part2(&lines)
 }
