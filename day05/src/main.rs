@@ -99,13 +99,17 @@ fn part2(lines: &Vec<String>) {
                 for (range_start, range_end) in buffer.into_iter() {
                     let is_complete_overlap =
                         mapper_start <= range_start && mapper_end >= range_end;
+
                     let is_left_hand_overlap = mapper_start <= range_start
                         && mapper_end >= range_start
                         && mapper_end < range_end;
+
                     let is_right_hand_overlap = mapper_start >= range_start
                         && mapper_start < range_end
                         && mapper_end >= range_end;
+
                     let is_within = mapper_start > range_start && mapper_end < range_end;
+
                     if is_complete_overlap {
                         result.push((range_start - offset, range_end - offset));
                     } else if is_within {
