@@ -60,12 +60,12 @@ fn part1(lines: &Vec<String>) {
 }
 
 fn part2(lines: &Vec<String>) {
-    let initial_seeds = lines[0]
+    let initial_ranges = lines[0]
         .split_ascii_whitespace()
         .filter_map(|s| s.parse::<i64>().ok())
         .collect::<Vec<_>>()
         .chunks(2)
-        .flat_map(|c| c[0]..(c[0] + c[1]))
+        .map(|c| (c[0], c[0] + c[1]))
         .collect::<Vec<_>>();
 
     let locations = lines
@@ -73,7 +73,7 @@ fn part2(lines: &Vec<String>) {
             return starts_with_digit(a) && starts_with_digit(b);
         })
         .filter(|group| starts_with_digit(&group[0]))
-        .fold(initial_seeds, |seeds, group| {
+        .fold(initial_ranges, |ranges, group| {
             let numbers = group
                 .iter()
                 .map(|l| {
@@ -91,25 +91,57 @@ fn part2(lines: &Vec<String>) {
                 })
                 .collect::<Vec<_>>();
 
-            seeds
-                .into_iter()
-                .map(|s| {
-                    numbers
-                        .iter()
-                        .find_map(|(start, end, offset)| {
-                            if s >= *start && s < *end {
-                                Some(s - offset)
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or(s)
-                })
-                .collect()
+            let mut result = vec![];
+            let mut buffer = ranges.clone();
+
+            for (mapper_start, mapper_end, offset) in numbers.into_iter() {
+                let mut tmp = vec![];
+                for (range_start, range_end) in buffer.into_iter() {
+                    let is_complete_overlap =
+                        mapper_start <= range_start && mapper_end >= range_end;
+                    let is_left_hand_overlap = mapper_start <= range_start
+                        && mapper_end >= range_start
+                        && mapper_end < range_end;
+                    let is_right_hand_overlap = mapper_start >= range_start
+                        && mapper_start < range_end
+                        && mapper_end >= range_end;
+                    let is_within = mapper_start > range_start && mapper_end < range_end;
+                    if is_complete_overlap {
+                        result.push((range_start - offset, range_end - offset));
+                    } else if is_within {
+                        let left = (range_start, mapper_start);
+                        let right = (mapper_end, range_end);
+
+                        tmp.push(left);
+                        tmp.push(right);
+
+                        result.push((mapper_start - offset, mapper_end - offset))
+                    } else if is_left_hand_overlap {
+                        let right = (mapper_end, range_end);
+                        tmp.push(right);
+
+                        result.push((range_start - offset, mapper_end - offset))
+                    } else if is_right_hand_overlap {
+                        let left = (range_start, mapper_start);
+                        tmp.push(left);
+
+                        result.push((mapper_start - offset, range_end - offset))
+                    } else {
+                        tmp.push((range_start, range_end));
+                    }
+                }
+
+                buffer = tmp;
+            }
+
+            result.extend(buffer);
+
+            result
         });
 
     let smallest_location = locations
         .iter()
+        .map(|(start, _)| start)
         .min()
         .expect("There to be a smallest location");
 
