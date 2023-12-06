@@ -17,7 +17,7 @@ fn part1(lines: &Vec<String>) {
         })
         .filter(|group| starts_with_digit(&group[0]))
         .fold(initial_seeds, |seeds, group| {
-            let numbers = group
+            let mapper_ranges = group
                 .iter()
                 .map(|l| {
                     match l
@@ -37,7 +37,7 @@ fn part1(lines: &Vec<String>) {
             seeds
                 .into_iter()
                 .map(|s| {
-                    numbers
+                    mapper_ranges
                         .iter()
                         .find_map(|(start, end, offset)| {
                             if s >= *start && s < *end {
@@ -74,7 +74,7 @@ fn part2(lines: &Vec<String>) {
         })
         .filter(|group| starts_with_digit(&group[0]))
         .fold(initial_ranges, |ranges, group| {
-            let numbers = group
+            let mapper_ranges = group
                 .iter()
                 .map(|l| {
                     match l
@@ -94,7 +94,7 @@ fn part2(lines: &Vec<String>) {
             let mut result = vec![];
             let mut buffer = ranges.clone();
 
-            for (mapper_start, mapper_end, offset) in numbers.into_iter() {
+            for (mapper_start, mapper_end, offset) in mapper_ranges.into_iter() {
                 let mut tmp = vec![];
                 for (range_start, range_end) in buffer.into_iter() {
                     let is_complete_overlap =
