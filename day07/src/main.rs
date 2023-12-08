@@ -18,7 +18,7 @@ fn to_card_value(c: char) -> u32 {
 
 fn to_hand_value(cards: &Vec<u32>) -> u32 {
     let mut sorted_cards = cards.clone();
-    sorted_cards.sort();
+    sorted_cards.sort_unstable();
     let mut grouped_cards = sorted_cards.group_by(|a, b| a == b).collect::<Vec<_>>();
     grouped_cards.sort_by(|a, b| b.len().cmp(&a.len()));
 
