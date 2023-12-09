@@ -32,7 +32,16 @@ fn part1(lines: &Vec<String>) {
 }
 
 fn part2(lines: &Vec<String>) {
-    println!("Part2: {}", "");
+    let sequences = lines.iter().map(|l| {
+        l.split_ascii_whitespace()
+            .map(|n| n.parse::<i64>().expect("It to be a number"))
+            .rev()
+            .collect::<Vec<_>>()
+    });
+
+    let value = sequences.map(predict_next_number).sum::<i64>();
+
+    println!("Part2: {}", value);
 }
 
 fn main() {
