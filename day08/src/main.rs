@@ -1,4 +1,6 @@
-use std::{cmp::Ordering, collections::HashMap, io};
+use std::{collections::HashMap, io};
+
+use num::Integer;
 
 fn part1(lines: &Vec<String>) {
     let instructions = lines[0].chars().cycle();
@@ -37,11 +39,63 @@ fn part1(lines: &Vec<String>) {
 }
 
 fn part2(lines: &Vec<String>) {
-    println!("Part2: {}", "");
+    let instructions = &lines[0];
+
+    let nodes = lines
+        .iter()
+        .skip(2)
+        .map(|l| {
+            let id = l.get(0..=2).expect("There to be a node name");
+
+            let left = l.get(7..=9).expect("There to be a left node");
+            let right = l.get(12..=14).expect("There to be right node");
+
+            return (id, (left, right));
+        })
+        .collect::<HashMap<_, _>>();
+
+    let state = nodes
+        .keys()
+        .filter(|k| k.ends_with("A"))
+        .collect::<Vec<_>>();
+
+    fn move_until_ends_with_z<'a>(
+        nodes: &'a HashMap<&str, (&str, &str)>,
+        start_node: &'a str,
+        instructions: std::str::Chars<'_>,
+    ) -> usize {
+        let mut moves = 0;
+        let mut node = start_node;
+        for instruction in instructions.cycle() {
+            let (left, right) = nodes.get(node).expect("There to be a node");
+            node = match instruction {
+                'L' => left,
+                'R' => right,
+                _ => panic!("Unknown instruction"),
+            };
+
+            moves += 1;
+            if node.ends_with("Z") {
+                break;
+            }
+        }
+
+        moves
+    }
+
+    let mut q: Option<usize> = None;
+
+    for start in state {
+        let m = move_until_ends_with_z(&nodes, start, instructions.chars());
+
+        q = Some(q.map_or(m, |w| w.lcm(&m)));
+    }
+
+    println!("Part2: {}", q.unwrap());
 }
 
 fn main() {
     let lines = io::stdin().lines().map(|l| l.unwrap()).collect::<Vec<_>>();
     part1(&lines);
-    part2(&lines)
+    part2(&lines);
 }
