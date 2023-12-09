@@ -2,7 +2,7 @@ use std::{collections::HashMap, io};
 
 use num::Integer;
 
-fn moves_until<'a>(
+fn count_moves<'a>(
     nodes: &'a HashMap<&str, (&str, &str)>,
     start_node: &'a str,
     end_node: &'a str,
@@ -47,7 +47,7 @@ fn part1(lines: &Vec<String>) {
 
     let nodes = make_graph(lines);
 
-    let moves = moves_until(&nodes, "AAA", "ZZZ", instructions.chars());
+    let moves = count_moves(&nodes, "AAA", "ZZZ", instructions.chars());
 
     println!("Part1: {}", moves);
 }
@@ -65,7 +65,7 @@ fn part2(lines: &Vec<String>) {
     let mut q: Option<usize> = None;
 
     for start in state {
-        let m = moves_until(&nodes, start, "Z", instructions.chars());
+        let m = count_moves(&nodes, start, "Z", instructions.chars());
 
         q = Some(q.map_or(m, |w| w.lcm(&m)));
     }
