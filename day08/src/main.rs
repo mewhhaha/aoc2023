@@ -2,10 +2,33 @@ use std::{collections::HashMap, io};
 
 use num::Integer;
 
-fn part1(lines: &Vec<String>) {
-    let instructions = lines[0].chars().cycle();
+fn moves_until<'a>(
+    nodes: &'a HashMap<&str, (&str, &str)>,
+    start_node: &'a str,
+    end_node: &'a str,
+    instructions: std::str::Chars<'_>,
+) -> usize {
+    let mut moves = 0;
+    let mut node = start_node;
+    for instruction in instructions.cycle() {
+        let (left, right) = nodes.get(node).expect("There to be a node");
+        node = match instruction {
+            'L' => left,
+            'R' => right,
+            _ => panic!("Unknown instruction"),
+        };
 
-    let nodes = lines
+        moves += 1;
+        if node.ends_with(end_node) {
+            break;
+        }
+    }
+
+    moves
+}
+
+fn make_graph(lines: &Vec<String>) -> HashMap<&str, (&str, &str)> {
+    lines
         .iter()
         .skip(2)
         .map(|l| {
@@ -16,24 +39,15 @@ fn part1(lines: &Vec<String>) {
 
             return (id, (left, right));
         })
-        .collect::<HashMap<_, _>>();
+        .collect::<HashMap<_, _>>()
+}
 
-    let mut node = "AAA";
-    let mut moves = 0;
+fn part1(lines: &Vec<String>) {
+    let instructions = &lines[0];
 
-    for instruction in instructions {
-        if node == "ZZZ" {
-            break;
-        }
+    let nodes = make_graph(lines);
 
-        let (left, right) = nodes.get(node).expect("There to be a node");
-        node = match instruction {
-            'L' => left,
-            'R' => right,
-            _ => panic!("Unknown instruction"),
-        };
-        moves += 1;
-    }
+    let moves = moves_until(&nodes, "AAA", "ZZZ", instructions.chars());
 
     println!("Part1: {}", moves);
 }
@@ -41,52 +55,17 @@ fn part1(lines: &Vec<String>) {
 fn part2(lines: &Vec<String>) {
     let instructions = &lines[0];
 
-    let nodes = lines
-        .iter()
-        .skip(2)
-        .map(|l| {
-            let id = l.get(0..=2).expect("There to be a node name");
-
-            let left = l.get(7..=9).expect("There to be a left node");
-            let right = l.get(12..=14).expect("There to be right node");
-
-            return (id, (left, right));
-        })
-        .collect::<HashMap<_, _>>();
+    let nodes = make_graph(lines);
 
     let state = nodes
         .keys()
         .filter(|k| k.ends_with("A"))
         .collect::<Vec<_>>();
 
-    fn move_until_ends_with_z<'a>(
-        nodes: &'a HashMap<&str, (&str, &str)>,
-        start_node: &'a str,
-        instructions: std::str::Chars<'_>,
-    ) -> usize {
-        let mut moves = 0;
-        let mut node = start_node;
-        for instruction in instructions.cycle() {
-            let (left, right) = nodes.get(node).expect("There to be a node");
-            node = match instruction {
-                'L' => left,
-                'R' => right,
-                _ => panic!("Unknown instruction"),
-            };
-
-            moves += 1;
-            if node.ends_with("Z") {
-                break;
-            }
-        }
-
-        moves
-    }
-
     let mut q: Option<usize> = None;
 
     for start in state {
-        let m = move_until_ends_with_z(&nodes, start, instructions.chars());
+        let m = moves_until(&nodes, start, "Z", instructions.chars());
 
         q = Some(q.map_or(m, |w| w.lcm(&m)));
     }
