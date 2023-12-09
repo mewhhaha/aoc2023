@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io};
+use std::io;
 
 fn predict_next_number(sequence: Vec<i64>) -> i64 {
     if sequence.iter().all(|n| Some(n) == sequence.first()) {
