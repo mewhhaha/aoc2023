@@ -1,5 +1,7 @@
 #![feature(generic_arg_infer)]
-use std::io;
+#![feature(iter_intersperse)]
+#![feature(let_chains)]
+use std::{collections::BinaryHeap, io};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Direction {
@@ -83,8 +85,128 @@ fn part1(lines: &Vec<String>) {
     println!("Part1: {}", furthest_away);
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum Tile {
+    Inside,
+    Outside,
+    Loop(char),
+}
+
 fn part2(lines: &Vec<String>) {
-    println!("Part2: {}", "");
+    let pipes = lines
+        .iter()
+        .map(|l| l.chars().collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+
+    let mut tiles = pipes
+        .iter()
+        .map(|l| vec![Tile::Inside; l.len()])
+        .collect::<Vec<_>>();
+
+    let (mut position, mut direction) = find_start(&pipes).unwrap();
+
+    loop {
+        position = move_in_direction(position, &direction);
+        let pipe = &pipes[position.1][position.0];
+
+        tiles[position.1][position.0] = Tile::Loop(*pipe);
+        if *pipe == 'S' {
+            break;
+        }
+
+        direction = follow_pipe(&direction, pipe).unwrap();
+    }
+
+    let length = tiles[0].len();
+    tiles = tiles
+        .into_iter()
+        .intersperse(vec![Tile::Inside; length])
+        .map(|l| l.into_iter().intersperse(Tile::Inside).collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+
+    for y in 0..tiles.len() {
+        for x in 0..tiles[0].len() {
+            let get_tile = |(x, y): (usize, usize)| tiles.get(y).and_then(|l| l.get(x));
+            let north = y.checked_sub(1).map(|cy| (x, cy)).and_then(get_tile);
+            let south = get_tile((x, y + 1));
+            let west = x.checked_sub(1).map(|cx| (cx, y)).and_then(get_tile);
+            let east = get_tile((x + 1, y));
+
+            match (north, south, west, east) {
+                (
+                    Some(Tile::Loop('|' | 'F' | '7' | 'S')),
+                    Some(Tile::Loop('|' | 'L' | 'J' | 'S')),
+                    _,
+                    _,
+                ) => {
+                    tiles[y][x] = Tile::Loop('|');
+                }
+                (
+                    _,
+                    _,
+                    Some(Tile::Loop('-' | 'F' | 'L' | 'S')),
+                    Some(Tile::Loop('-' | 'J' | '7' | 'S')),
+                ) => {
+                    tiles[y][x] = Tile::Loop('-');
+                }
+                _ => (),
+            }
+        }
+    }
+
+    let top_edge = (0..tiles[0].len()).map(|x| (x, 0));
+    let bottom_edge = (0..tiles[0].len()).map(|x| (x, tiles.len() - 1));
+    let left_edge = (0..tiles.len()).map(|y| (0, y));
+    let right_edge = (0..tiles.len()).map(|y| (tiles[0].len() - 1, y));
+
+    let mut heap = top_edge
+        .chain(bottom_edge)
+        .chain(left_edge)
+        .chain(right_edge)
+        .filter(|(x, y)| match tiles[*y][*x] {
+            Tile::Loop(_) => false,
+            _ => true,
+        })
+        .collect::<BinaryHeap<_>>();
+
+    while let Some((x, y)) = heap.pop() {
+        let tile = tiles[y][x];
+
+        if tile != Tile::Inside {
+            continue;
+        }
+
+        tiles[y][x] = Tile::Outside;
+
+        let get_tile = |(x, y): (usize, usize)| tiles.get(y).and_then(|l| l.get(x));
+
+        let north = y.checked_sub(1).map(|cy| (x, cy));
+        let south = Some((x, y + 1));
+        let west = x.checked_sub(1).map(|cx| (cx, y));
+        let east = Some((x + 1, y));
+
+        for o in [north, south, west, east] {
+            if let Some(pos) = o
+                && get_tile(pos) == Some(&Tile::Inside)
+            {
+                heap.push(pos);
+            }
+        }
+    }
+
+    let tiles_inside = tiles
+        .iter()
+        .enumerate()
+        .filter_map(|(y, l)| if y & 1 == 0 { Some(l) } else { None })
+        .map(|l| {
+            l.iter()
+                .enumerate()
+                .filter(|(x, t)| x & 1 == 0 && **t == Tile::Inside)
+                .count()
+        })
+        .sum::<usize>();
+
+    println!("Part2: {}", tiles_inside);
 }
 
 fn main() {
