@@ -1,4 +1,4 @@
-use std::{collections::BinaryHeap, io};
+use std::io;
 
 fn transpose(grid: &Vec<Vec<char>>) -> Vec<Vec<char>> {
     let mut new_grid = vec![];
@@ -39,13 +39,20 @@ fn expand_rows(grid: &Vec<Vec<char>>) -> Vec<Vec<char>> {
     new_grid
 }
 
-fn print_universe(universe: &Vec<Vec<char>>) {
-    for row in universe.iter() {
-        for cell in row {
-            print!("{}", cell);
-        }
-        println!();
-    }
+fn get_galaxies(universe: &Vec<Vec<char>>) -> Vec<(usize, usize)> {
+    universe
+        .iter()
+        .enumerate()
+        .flat_map(|(y, row)| {
+            row.iter()
+                .enumerate()
+                .filter_map(move |(x, c)| if *c == '#' { Some((x, y)) } else { None })
+        })
+        .collect::<Vec<_>>()
+}
+
+fn manhattan_distance(a: &(usize, usize), b: &(usize, usize)) -> i64 {
+    (a.0 as i64 - b.0 as i64).abs() + (a.1 as i64 - b.1 as i64).abs()
 }
 
 fn part1(lines: &Vec<String>) {
@@ -59,33 +66,57 @@ fn part1(lines: &Vec<String>) {
     universe = expand_rows(&universe);
     universe = transpose(&universe);
 
-    let galaxies = universe
-        .into_iter()
-        .enumerate()
-        .flat_map(|(y, row)| {
-            row.into_iter()
-                .enumerate()
-                .filter_map(move |(x, c)| if c == '#' { Some((x, y)) } else { None })
-        })
-        .collect::<Vec<_>>();
+    let galaxies = get_galaxies(&universe);
 
     let mut sum = 0;
 
-    for g1 in galaxies.iter() {
-        for g2 in galaxies.iter() {
-            let manhattan_distance =
-                (g1.0 as i32 - g2.0 as i32).abs() + (g1.1 as i32 - g2.1 as i32).abs();
-
-            sum += manhattan_distance;
+    for g1 in 0..galaxies.len() {
+        for g2 in g1..galaxies.len() {
+            sum += manhattan_distance(&galaxies[g1], &galaxies[g2]);
         }
     }
 
     // We count each pair doubly ([a,b] and [b,a]), so this just divides by 2 to get the right sum
-    println!("Part1: {}", sum / 2);
+    println!("Part1: {}", sum);
 }
 
 fn part2(lines: &Vec<String>) {
-    println!("Part2: {}", "");
+    let mut universe = lines
+        .iter()
+        .map(|l| l.chars().collect())
+        .collect::<Vec<Vec<_>>>();
+
+    let non_expanded_galaxies = get_galaxies(&universe);
+
+    let mut non_expanded_sum = 0;
+
+    for g1 in 0..non_expanded_galaxies.len() {
+        for g2 in g1..non_expanded_galaxies.len() {
+            non_expanded_sum +=
+                manhattan_distance(&non_expanded_galaxies[g1], &non_expanded_galaxies[g2])
+        }
+    }
+
+    universe = expand_rows(&universe);
+    universe = transpose(&universe);
+    universe = expand_rows(&universe);
+    universe = transpose(&universe);
+
+    let galaxies = get_galaxies(&universe);
+
+    let mut expanded_sum = 0;
+
+    for g1 in 0..galaxies.len() {
+        for g2 in g1..galaxies.len() {
+            expanded_sum += manhattan_distance(&galaxies[g1], &galaxies[g2])
+        }
+    }
+
+    let difference = expanded_sum - non_expanded_sum;
+
+    let sum = non_expanded_sum + difference * (1_000_000 - 1);
+
+    println!("Part2: {}", sum);
 }
 
 fn main() {
