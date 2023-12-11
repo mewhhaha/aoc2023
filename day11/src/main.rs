@@ -71,12 +71,12 @@ fn part1(lines: &Vec<String>) {
     let mut sum = 0;
 
     for g1 in 0..galaxies.len() {
+        // Avoid counting double pairs ([a,b] and [b,a]) by decrementing the range for g2
         for g2 in g1..galaxies.len() {
             sum += manhattan_distance(&galaxies[g1], &galaxies[g2]);
         }
     }
 
-    // We count each pair doubly ([a,b] and [b,a]), so this just divides by 2 to get the right sum
     println!("Part1: {}", sum);
 }
 
@@ -114,7 +114,7 @@ fn part2(lines: &Vec<String>) {
 
     let difference = expanded_sum - non_expanded_sum;
 
-    let sum = non_expanded_sum + difference * (1_000_000 - 1);
+    let sum = non_expanded_sum + difference * (1_000_000 - 1); // -1 since we already expanded once
 
     println!("Part2: {}", sum);
 }
