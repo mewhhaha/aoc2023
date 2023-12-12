@@ -1,40 +1,9 @@
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
 use std::io;
 
 struct Record {
     locations: Vec<char>,
     numbers: Vec<usize>,
-}
-
-#[derive(Clone, Debug)]
-struct Numbers(Vec<usize>);
-
-impl PartialEq for Numbers {
-    fn eq(&self, other: &Self) -> bool {
-        if self.0.len() != other.0.len() {
-            return false;
-        }
-
-        self.0.iter().zip(other.0.iter()).all(|(a, b)| a == b)
-    }
-}
-
-impl Eq for Numbers {}
-
-impl Hash for Numbers {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.len().hash(state);
-        for elem in &self.0 {
-            elem.hash(state);
-        }
-    }
-}
-
-impl FromIterator<usize> for Numbers {
-    fn from_iter<T: IntoIterator<Item = usize>>(iter: T) -> Self {
-        Numbers(iter.into_iter().collect())
-    }
 }
 
 fn parse_record(line: &String) -> Record {
