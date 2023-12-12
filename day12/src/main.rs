@@ -30,8 +30,7 @@ fn count_arrangements(
     }
 
     match numbers.first() {
-        None if locations.contains(&'#') => return 0,
-        None => return 1,
+        None => return if locations.contains(&'#') { 0 } else { 1 },
         Some(first) if locations.len() < *first => return 0,
         Some(first) => {
             let mut result: u64 = 0;
@@ -53,7 +52,7 @@ fn count_arrangements(
 
             memo.insert(key, result);
 
-            result
+            return result;
         }
     }
 }
