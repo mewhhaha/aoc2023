@@ -23,42 +23,39 @@ fn count_arrangements(
     locations: &[char],
     numbers: &[usize],
 ) -> u64 {
-    if numbers.len() == 0 {
-        return if locations.contains(&'#') { 0 } else { 1 };
-    }
-
-    let first = numbers[0];
-
-    if locations.len() < first {
-        return 0;
-    }
-
     let key = format!("{:?}:{:?}", locations, numbers);
 
     if let Some(result) = memo.get(&key) {
         return *result;
     }
 
-    let mut result: u64 = 0;
+    match numbers.first() {
+        None if locations.contains(&'#') => return 0,
+        None => return 1,
+        Some(first) if locations.len() < *first => return 0,
+        Some(first) => {
+            let mut result: u64 = 0;
 
-    if locations.len() > 0 && locations[0] != '#' {
-        result += count_arrangements(memo, &locations[1..], numbers);
+            if locations.len() > 0 && locations[0] != '#' {
+                result += count_arrangements(memo, &locations[1..], numbers);
+            }
+
+            let (fst, snd) = locations.split_at(*first);
+            let fit = fst.iter().all(|c| match c {
+                '?' | '#' => true,
+                _ => false,
+            });
+
+            if fit && snd.get(0) != Some(&'#') {
+                let next_locations = if snd.len() == 0 { snd } else { &snd[1..] };
+                result += count_arrangements(memo, next_locations, &numbers[1..]);
+            }
+
+            memo.insert(key, result);
+
+            result
+        }
     }
-
-    let (fst, snd) = locations.split_at(first);
-    let fit = fst.iter().all(|c| match c {
-        '?' | '#' => true,
-        _ => false,
-    });
-
-    if fit && snd.get(0) != Some(&'#') {
-        let next_locations = if snd.len() == 0 { snd } else { &snd[1..] };
-        result += count_arrangements(memo, next_locations, &numbers[1..]);
-    }
-
-    memo.insert(key, result);
-
-    result
 }
 
 fn part1(lines: &Vec<String>) {
