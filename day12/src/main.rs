@@ -64,15 +64,7 @@ fn count_arrangements(
         return 0;
     }
 
-    let key = format!(
-        "{}:{}",
-        locations.iter().collect::<String>(),
-        numbers
-            .iter()
-            .map(|n| n.to_string())
-            .collect::<Vec<_>>()
-            .join(",")
-    );
+    let key = format!("{:?}:{:?}", locations, numbers);
 
     if let Some(result) = memo.get(&key) {
         return *result;
