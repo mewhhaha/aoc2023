@@ -23,12 +23,7 @@ fn rotate(v: V2<i32>, deg: i32) -> V2<i32> {
     }
 }
 
-fn part1(lines: &Vec<String>) {
-    let grid = lines
-        .into_iter()
-        .map(|l| l.chars().collect::<Vec<_>>())
-        .collect::<Vec<_>>();
-
+fn trace_ray(grid: &Vec<Vec<char>>, start_ray: (V2<i32>, V2<i32>)) -> HashSet<V2<i32>> {
     let get_cell = |x: i32, y: i32| {
         if x < 0 || y < 0 {
             return None;
@@ -40,8 +35,7 @@ fn part1(lines: &Vec<String>) {
 
     let mut memory = HashSet::new();
 
-    let start = (V2(-1, 0), V2(1, 0));
-    let mut rays = vec![start];
+    let mut rays = vec![start_ray];
     while let Some((mut pos, vel)) = rays.pop() {
         // We keep a memory of positions and velocity so that if we encounter the same (ie: a loop) we'll quit prematurely
         if memory.contains(&(pos, vel)) {
@@ -74,14 +68,47 @@ fn part1(lines: &Vec<String>) {
         }
     }
 
-    // We remove the starting point since it's outside the grid
-    set.remove(&start.0);
+    set
+}
 
-    println!("Part1: {}", set.len());
+fn part1(lines: &Vec<String>) {
+    let grid = lines
+        .into_iter()
+        .map(|l| l.chars().collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+
+    let start = (V2(-1, 0), V2(1, 0));
+
+    let mut energized_tiles = trace_ray(&grid, start);
+
+    // We remove the starting point since it's outside the grid
+    energized_tiles.remove(&start.0);
+
+    println!("Part1: {}", energized_tiles.len());
 }
 
 fn part2(lines: &Vec<String>) {
-    println!("Part2: {}", "");
+    let grid = lines
+        .into_iter()
+        .map(|l| l.chars().collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+
+    let top_row = (0..grid[0].len()).map(|x| (V2(x as i32, -1), V2(0, 1)));
+    let bottom_row = (0..grid[0].len()).map(|x| (V2(x as i32, grid.len() as i32), V2(0, -1)));
+    let left_col = (0..grid.len()).map(|y| (V2(-1, y as i32), V2(1, 0)));
+    let right_col = (0..grid.len()).map(|y| (V2(grid[0].len() as i32, y as i32), V2(-1, 0)));
+
+    let starting_points = top_row.chain(bottom_row).chain(left_col).chain(right_col);
+
+    let mut max_energized_tiles = 0;
+
+    for start in starting_points {
+        let mut energized_tiles = trace_ray(&grid, start);
+        energized_tiles.remove(&start.0);
+        max_energized_tiles = max_energized_tiles.max(energized_tiles.len());
+    }
+
+    println!("Part2: {}", max_energized_tiles);
 }
 
 fn main() {
