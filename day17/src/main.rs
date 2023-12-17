@@ -1,5 +1,5 @@
 use std::{
-    collections::{BinaryHeap, HashMap, HashSet},
+    collections::{BinaryHeap, HashSet},
     io,
 };
 
@@ -183,8 +183,6 @@ fn part2(lines: &Vec<String>) {
             }
         }
     }
-
-    let seen_positions = seen.iter().map(|(_, _, p)| *p).collect::<Vec<_>>();
 }
 
 fn main() {
