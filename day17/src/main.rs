@@ -1,5 +1,5 @@
 use std::{
-    collections::{BinaryHeap, HashMap},
+    collections::{BinaryHeap, HashMap, HashSet},
     io,
 };
 
@@ -7,7 +7,8 @@ use std::{
 struct State {
     cost: u32,
     position: (i32, i32),
-    direction: (usize, (i32, i32)),
+    direction: (i32, i32),
+    counter: usize,
 }
 
 impl PartialOrd for State {
@@ -47,12 +48,13 @@ fn part1(lines: &Vec<String>) {
         return grid.get(y as usize).and_then(|row| row.get(x as usize));
     };
 
-    let mut seen = HashMap::new();
+    let mut seen = HashSet::new();
     let mut queue = BinaryHeap::new();
     queue.push(State {
         cost: 0,
         position: (0, 0),
-        direction: (3, (0, 0)),
+        counter: 3,
+        direction: (0, 0),
     });
 
     let end = ((grid[0].len() - 1) as i32, (grid.len() - 1) as i32);
@@ -64,34 +66,33 @@ fn part1(lines: &Vec<String>) {
             break;
         }
 
-        for velocity in adjacent.iter() {
-            let new_position = add_position(&st.position, &velocity);
-            let new_countdown = if st.direction.1 == *velocity {
-                st.direction.0 - 1
-            } else {
-                3
-            };
+        for new_direction in adjacent.iter() {
+            let is_same_direction = st.direction == *new_direction;
+            let new_position = add_position(&st.position, &new_direction);
+            let new_counter = if is_same_direction { st.counter - 1 } else { 3 };
 
-            if new_position == sub_position(&st.position, &st.direction.1) {
+            let is_previous_position = new_position == sub_position(&st.position, &st.direction);
+            if is_previous_position {
                 continue;
             }
 
-            if new_countdown == 0 {
+            if new_counter == 0 {
                 continue;
             }
 
-            if seen.contains_key(&(new_countdown, velocity, new_position)) {
+            if seen.contains(&(new_counter, new_direction, new_position)) {
                 continue;
             }
 
             if let Some(c) = get_cell(new_position.0, new_position.1) {
                 let new_cost = st.cost + c;
-                seen.insert((new_countdown, velocity, new_position), new_cost);
+                seen.insert((new_counter, new_direction, new_position));
 
                 queue.push(State {
                     cost: new_cost,
                     position: new_position,
-                    direction: (new_countdown, *velocity),
+                    counter: new_counter,
+                    direction: *new_direction,
                 });
             }
         }
@@ -99,7 +100,91 @@ fn part1(lines: &Vec<String>) {
 }
 
 fn part2(lines: &Vec<String>) {
-    println!("Part2: {}", "");
+    let grid = lines
+        .into_iter()
+        .map(|l| {
+            l.chars()
+                .map(|c| c.to_digit(10).unwrap())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    let get_cell = |x: i32, y: i32| {
+        if x < 0 || y < 0 {
+            return None;
+        }
+        return grid.get(y as usize).and_then(|row| row.get(x as usize));
+    };
+
+    let mut seen = HashSet::new();
+    let mut queue = BinaryHeap::new();
+    queue.push(State {
+        cost: 0,
+        position: (0, 0),
+        counter: 0,
+        direction: (1, 0),
+    });
+
+    queue.push(State {
+        cost: 0,
+        position: (0, 0),
+        counter: 0,
+        direction: (0, 1),
+    });
+
+    let end = ((grid[0].len() - 1) as i32, (grid.len() - 1) as i32);
+    let adjacent = [(0, 1), (0, -1), (1, 0), (-1, 0)];
+
+    let minimum_steps = 4;
+    let maximum_steps = 10;
+
+    while let Some(st) = queue.pop() {
+        if st.position == end && st.counter >= minimum_steps {
+            println!("Part2: {}", st.cost);
+            break;
+        }
+
+        for new_direction in adjacent.iter() {
+            let is_different_direction = st.direction != *new_direction;
+            if is_different_direction && st.counter < minimum_steps {
+                continue;
+            }
+
+            let new_counter = if is_different_direction {
+                1
+            } else {
+                st.counter + 1
+            };
+
+            if new_counter > maximum_steps {
+                continue;
+            }
+
+            let new_position = add_position(&st.position, &new_direction);
+
+            if new_position == sub_position(&st.position, &st.direction) {
+                continue;
+            }
+
+            if seen.contains(&(new_counter, new_direction, new_position)) {
+                continue;
+            }
+
+            if let Some(c) = get_cell(new_position.0, new_position.1) {
+                let new_cost = st.cost + c;
+                seen.insert((new_counter, new_direction, new_position));
+
+                queue.push(State {
+                    cost: new_cost,
+                    position: new_position,
+                    counter: new_counter,
+                    direction: *new_direction,
+                });
+            }
+        }
+    }
+
+    let seen_positions = seen.iter().map(|(_, _, p)| *p).collect::<Vec<_>>();
 }
 
 fn main() {
