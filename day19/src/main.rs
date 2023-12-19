@@ -1,11 +1,12 @@
 #![feature(slice_group_by)]
 use std::{collections::HashMap, io};
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum Category {
-    X,
-    M,
-    A,
-    S,
+    X = 0,
+    M = 1,
+    A = 2,
+    S = 3,
 }
 enum Comparison {
     LT,
@@ -28,12 +29,7 @@ struct Sorter {
     conditions: Vec<Condition>,
 }
 
-struct Part {
-    x: i64,
-    m: i64,
-    a: i64,
-    s: i64,
-}
+type Part = [i64; 4];
 
 fn parse_sorter(line: &String) -> Sorter {
     // Example of input mjv{x<2089:R,x>2415:R,x<2280:A,R}
@@ -115,11 +111,14 @@ fn parse_part(line: &String) -> Part {
         .try_into()
         .expect("There to be four columns");
 
-    Part { x, m, a, s }
+    [x, m, a, s]
 }
 
 fn sum_of_xmas(p: Part) -> i64 {
-    p.x + p.m + p.a + p.s
+    p[Category::X as usize]
+        + p[Category::M as usize]
+        + p[Category::A as usize]
+        + p[Category::S as usize]
 }
 
 fn part1(lines: &Vec<String>) {
@@ -143,12 +142,7 @@ fn part1(lines: &Vec<String>) {
             for condition in &sorter.conditions {
                 let maybe_result = match condition {
                     Condition::If(c, comparison, value, result) => {
-                        let part_value = match c {
-                            Category::X => part.x,
-                            Category::M => part.m,
-                            Category::A => part.a,
-                            Category::S => part.s,
-                        };
+                        let part_value = part[*c as usize];
 
                         let passed = match comparison {
                             Comparison::LT => part_value < *value,
@@ -181,16 +175,13 @@ fn part1(lines: &Vec<String>) {
 // Just using vec for simplicity
 // Could be a range or an (i64, i64) but because the size is just 1-4000
 // then might as well use all the associated functions with vec
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct RangedPart {
-    x: Vec<i64>,
-    m: Vec<i64>,
-    a: Vec<i64>,
-    s: Vec<i64>,
-}
+type RangedPart = [Vec<i64>; 4];
 
 fn sum_of_xmas_ranged(part: &RangedPart) -> i64 {
-    part.x.len() as i64 * part.m.len() as i64 * part.a.len() as i64 * part.s.len() as i64
+    part[Category::X as usize].len() as i64
+        * part[Category::M as usize].len() as i64
+        * part[Category::A as usize].len() as i64
+        * part[Category::S as usize].len() as i64
 }
 
 fn part2(lines: &Vec<String>) {
@@ -226,28 +217,12 @@ fn part2(lines: &Vec<String>) {
 
                     let mut passed_part = failed_part.clone();
 
-                    match c {
-                        Category::X => {
-                            let (passed_x, failed_x) = failed_part.x.iter().partition(part_filter);
-                            failed_part.x = failed_x;
-                            passed_part.x = passed_x;
-                        }
-                        Category::M => {
-                            let (passed_m, failed_m) = failed_part.m.iter().partition(part_filter);
-                            failed_part.m = failed_m;
-                            passed_part.m = passed_m;
-                        }
-                        Category::A => {
-                            let (passed_a, failed_a) = failed_part.a.iter().partition(part_filter);
-                            failed_part.a = failed_a;
-                            passed_part.a = passed_a;
-                        }
-                        Category::S => {
-                            let (passed_s, failed_s) = failed_part.s.iter().partition(part_filter);
-                            failed_part.s = failed_s;
-                            passed_part.s = passed_s;
-                        }
-                    };
+                    let key = *c as usize;
+                    let (passed_value, failed_value) =
+                        failed_part[key].iter().partition(part_filter);
+
+                    failed_part[key] = failed_value;
+                    passed_part[key] = passed_value;
 
                     sum += count_combinations(sorters, passed_part, result);
                 }
@@ -269,12 +244,12 @@ fn part2(lines: &Vec<String>) {
 
     let one_to_4000 = (1..=4000).collect::<Vec<_>>();
 
-    let part = RangedPart {
-        x: one_to_4000.clone(),
-        m: one_to_4000.clone(),
-        a: one_to_4000.clone(),
-        s: one_to_4000.clone(),
-    };
+    let part: RangedPart = [
+        one_to_4000.clone(),
+        one_to_4000.clone(),
+        one_to_4000.clone(),
+        one_to_4000.clone(),
+    ];
 
     let result = &Result::Forwarded("in".to_string());
     let sum = count_combinations(&sorters, part, result);
