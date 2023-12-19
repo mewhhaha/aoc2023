@@ -1,5 +1,5 @@
 #![feature(slice_group_by)]
-use std::{collections::HashMap, io};
+use std::{collections::HashMap, io, str::FromStr};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum Category {
@@ -8,20 +8,34 @@ enum Category {
     A = 2,
     S = 3,
 }
+
+impl FromStr for Category {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "x" => Ok(Category::X),
+            "m" => Ok(Category::M),
+            "a" => Ok(Category::A),
+            "s" => Ok(Category::S),
+            _ => Err("Invalid category"),
+        }
+    }
+}
 enum Comparison {
     LT,
     GT,
 }
 
-enum Result {
+enum To {
     Forwarded(String),
     Accepted,
     Rejected,
 }
 
 enum Condition {
-    If(Category, Comparison, i64, Result),
-    Else(Result),
+    If(Category, Comparison, i64, To),
+    Else(To),
 }
 
 struct Sorter {
@@ -66,9 +80,9 @@ fn parse_sorter(line: &String) -> Sorter {
 
         let raw_result = rest.collect::<String>();
         let result = match raw_result.as_str() {
-            "R" => Result::Rejected,
-            "A" => Result::Accepted,
-            _ => Result::Forwarded(raw_result),
+            "R" => To::Rejected,
+            "A" => To::Accepted,
+            _ => To::Forwarded(raw_result),
         };
 
         Condition::If(category, comparison, value, result)
@@ -80,9 +94,9 @@ fn parse_sorter(line: &String) -> Sorter {
         }
 
         match line {
-            "A" => return Condition::Else(Result::Accepted),
-            "R" => return Condition::Else(Result::Rejected),
-            _ => Condition::Else(Result::Forwarded(line.to_string())),
+            "A" => return Condition::Else(To::Accepted),
+            "R" => return Condition::Else(To::Rejected),
+            _ => Condition::Else(To::Forwarded(line.to_string())),
         }
     }
 
@@ -134,9 +148,9 @@ fn part1(lines: &Vec<String>) {
     let mut sum = 0;
 
     for part in parts {
-        let mut result = &Result::Forwarded("in".to_string());
+        let mut result = &To::Forwarded("in".to_string());
 
-        while let Result::Forwarded(sorter_key) = result {
+        while let To::Forwarded(sorter_key) = result {
             let sorter = sorters.get(sorter_key).unwrap();
 
             for condition in &sorter.conditions {
@@ -164,7 +178,7 @@ fn part1(lines: &Vec<String>) {
             }
         }
 
-        if let Result::Accepted = result {
+        if let To::Accepted = result {
             sum += sum_of_xmas(part);
         }
     }
@@ -187,20 +201,16 @@ fn sum_of_xmas_ranged(part: &RangedPart) -> i64 {
 fn part2(lines: &Vec<String>) {
     let (sorter_lines, _) = lines.split_at(lines.iter().position(|l| l == "").unwrap());
 
-    fn count_combinations(
-        sorters: &HashMap<String, Sorter>,
-        part: RangedPart,
-        result: &Result,
-    ) -> i64 {
+    fn count_combinations(sorters: &HashMap<String, Sorter>, part: RangedPart, result: &To) -> i64 {
         if sum_of_xmas_ranged(&part) == 0 {
             return 0;
         }
 
         let sorter: &Sorter;
         match result {
-            Result::Accepted => return sum_of_xmas_ranged(&part),
-            Result::Rejected => return 0,
-            Result::Forwarded(s) => sorter = sorters.get(s).unwrap(),
+            To::Accepted => return sum_of_xmas_ranged(&part),
+            To::Rejected => return 0,
+            To::Forwarded(s) => sorter = sorters.get(s).unwrap(),
         }
 
         let mut sum = 0;
@@ -251,7 +261,7 @@ fn part2(lines: &Vec<String>) {
         one_to_4000.clone(),
     ];
 
-    let result = &Result::Forwarded("in".to_string());
+    let result = &To::Forwarded("in".to_string());
     let sum = count_combinations(&sorters, part, result);
 
     println!("Part2: {}", sum);
