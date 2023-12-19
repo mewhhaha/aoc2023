@@ -250,7 +250,7 @@ fn part2(lines: &Vec<String>) {
                     sum += count_combinations(sorters, passed_part, result);
                 }
                 Condition::Else(result) => {
-                    sum += count_combinations(sorters, failed_part.clone(), result);
+                    sum += count_combinations(sorters, failed_part, result);
                     break;
                 }
             };
