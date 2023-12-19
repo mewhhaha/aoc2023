@@ -1,10 +1,5 @@
 #![feature(slice_group_by)]
-use std::{
-    collections::{HashMap, HashSet},
-    io,
-    ops::Add,
-    str::Chars,
-};
+use std::{collections::HashMap, io};
 
 enum Category {
     X,
@@ -183,8 +178,106 @@ fn part1(lines: &Vec<String>) {
     println!("Part1: {}", sum);
 }
 
+// Just using vec for simplicity
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RangedPart {
+    x: Vec<i64>,
+    m: Vec<i64>,
+    a: Vec<i64>,
+    s: Vec<i64>,
+}
+
+fn sum_of_xmas_ranged(part: &RangedPart) -> i64 {
+    part.x.len() as i64 * part.m.len() as i64 * part.a.len() as i64 * part.s.len() as i64
+}
+
 fn part2(lines: &Vec<String>) {
-    println!("Part2: {}", "");
+    let (sorter_lines, _) = lines.split_at(lines.iter().position(|l| l == "").unwrap());
+
+    fn count_combinations(
+        sorters: &HashMap<String, Sorter>,
+        part: RangedPart,
+        result: &Result,
+    ) -> i64 {
+        if sum_of_xmas_ranged(&part) == 0 {
+            return 0;
+        }
+
+        let sorter: &Sorter;
+        match result {
+            Result::Accepted => return sum_of_xmas_ranged(&part),
+            Result::Rejected => return 0,
+            Result::Forwarded(s) => sorter = sorters.get(s).unwrap(),
+        }
+
+        let mut sum = 0;
+
+        let mut failed_part = part.clone();
+
+        for condition in &sorter.conditions {
+            match condition {
+                Condition::If(c, comparison, value, result) => {
+                    let part_filter = |v: &&i64| match comparison {
+                        Comparison::LT => *v < value,
+                        Comparison::GT => *v > value,
+                    };
+
+                    let mut passed_part = failed_part.clone();
+
+                    match c {
+                        Category::X => {
+                            let (passed_x, failed_x) = failed_part.x.iter().partition(part_filter);
+                            failed_part.x = failed_x;
+                            passed_part.x = passed_x;
+                        }
+                        Category::M => {
+                            let (passed_m, failed_m) = failed_part.m.iter().partition(part_filter);
+                            failed_part.m = failed_m;
+                            passed_part.m = passed_m;
+                        }
+                        Category::A => {
+                            let (passed_a, failed_a) = failed_part.a.iter().partition(part_filter);
+                            failed_part.a = failed_a;
+                            passed_part.a = passed_a;
+                        }
+                        Category::S => {
+                            let (passed_s, failed_s) = failed_part.s.iter().partition(part_filter);
+                            failed_part.s = failed_s;
+                            passed_part.s = passed_s;
+                        }
+                    };
+
+                    sum += count_combinations(sorters, passed_part, result);
+                }
+                Condition::Else(result) => {
+                    sum += count_combinations(sorters, failed_part.clone(), result);
+                    break;
+                }
+            };
+        }
+
+        sum
+    }
+
+    let sorters = sorter_lines
+        .iter()
+        .map(parse_sorter)
+        .map(|s| (s.key.clone(), s))
+        .collect::<HashMap<_, _>>();
+
+    let one_to_4000 = (1..=4000).collect::<Vec<_>>();
+
+    let part = RangedPart {
+        x: one_to_4000.clone(),
+        m: one_to_4000.clone(),
+        a: one_to_4000.clone(),
+        s: one_to_4000.clone(),
+    };
+
+    let result = &Result::Forwarded("in".to_string());
+    let sum = count_combinations(&sorters, part, result);
+
+    println!("Part2: {}", sum);
 }
 
 fn main() {
