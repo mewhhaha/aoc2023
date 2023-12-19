@@ -179,6 +179,8 @@ fn part1(lines: &Vec<String>) {
 }
 
 // Just using vec for simplicity
+// Could be a range or an (i64, i64) but because the size is just 1-4000
+// then might as well use all the associated functions with vec
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct RangedPart {
     x: Vec<i64>,
