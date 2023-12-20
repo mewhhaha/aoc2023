@@ -181,8 +181,31 @@ fn part2(lines: &Vec<String>) {
     let mut modules = parse_modules(lines);
     let mut history = HashMap::new();
 
+    let mut dependencies = vec!["rx".to_string()];
+    while let Some(dependency) = dependencies.pop() {
+        let module = modules
+            .iter()
+            .find(|m| m.output.contains(&dependency))
+            .unwrap();
+
+        match &module.logic {
+            Logic::None => panic!(),
+            Logic::FlipFlop(_, _) => panic!(),
+            Logic::Conjunction(inputs) => {
+                dependencies.extend(inputs.iter().map(|p| p.from.clone()))
+            }
+        }
+
+        if dependencies.len() > 1 {
+            break;
+        }
+    }
+
+    let mut press = 0;
     // Just testing out numbers until they all resolve the cn dependencies
-    for press in 1..10000 {
+    while history.len() != dependencies.len() {
+        press += 1;
+
         let mut pulses = VecDeque::new();
         pulses.push_back(Pulse {
             from: "".to_string(),
@@ -191,10 +214,7 @@ fn part2(lines: &Vec<String>) {
         });
 
         while let Some(pulse) = pulses.pop_front() {
-            // rx -> cn -> ...
-            // cn is the first conjuction module based on other modules
-            // likely this is the bottleneck
-            if pulse.to == "cn" && pulse.frequency == Frequency::High {
+            if dependencies.contains(&pulse.from) && pulse.frequency == Frequency::High {
                 let key = pulse.from.clone();
                 if !history.contains_key(&key) {
                     history.insert(key, press);
@@ -216,7 +236,7 @@ fn part2(lines: &Vec<String>) {
         }
     }
 
-    println!("Part2: {:?}", multiple);
+    println!("Part2: {:?}", multiple.unwrap());
 }
 
 fn main() {
