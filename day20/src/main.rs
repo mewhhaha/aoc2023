@@ -1,4 +1,7 @@
-use std::{collections::VecDeque, io};
+use std::{
+    collections::{HashMap, VecDeque},
+    io,
+};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 enum Frequency {
@@ -16,7 +19,7 @@ struct Pulse {
 #[derive(Debug, Clone)]
 enum Logic {
     None,
-    FlipFlop(bool),
+    FlipFlop(Vec<Pulse>, bool),
     Conjunction(Vec<Pulse>),
 }
 
@@ -39,7 +42,7 @@ fn parse_modules(lines: &Vec<String>) -> Vec<Module> {
             .collect::<Vec<_>>();
 
         let logic = match raw_input.get(0..1) {
-            Some("%") => Logic::FlipFlop(false),
+            Some("%") => Logic::FlipFlop(vec![], false),
             Some("&") => Logic::Conjunction(vec![]),
             _ => Logic::None,
         };
@@ -61,7 +64,7 @@ fn parse_modules(lines: &Vec<String>) -> Vec<Module> {
     let static_state = modules.clone();
 
     for module in modules.iter_mut() {
-        if let Logic::Conjunction(inputs) = &mut module.logic {
+        if let Logic::Conjunction(inputs) | Logic::FlipFlop(inputs, _) = &mut module.logic {
             let ms = static_state
                 .iter()
                 .filter(|m| m.output.contains(&module.name))
@@ -78,6 +81,54 @@ fn parse_modules(lines: &Vec<String>) -> Vec<Module> {
     modules
 }
 
+fn eval_pulse(
+    module: &mut Module,
+    pulses: &mut VecDeque<Pulse>,
+    Pulse {
+        from,
+        to,
+        frequency,
+    }: Pulse,
+) -> Option<Frequency> {
+    let mut new_frequency = frequency.clone();
+
+    match &mut module.logic {
+        Logic::None => (),
+        Logic::FlipFlop(_, on) => {
+            if frequency == Frequency::High {
+                return None;
+            }
+
+            *on = !*on;
+
+            new_frequency = match *on {
+                true => Frequency::High,
+                false => Frequency::Low,
+            };
+        }
+        Logic::Conjunction(inputs) => {
+            let index = inputs.iter().position(|p| p.from == from).unwrap();
+            inputs[index].frequency = frequency.clone();
+
+            new_frequency = if inputs.iter().all(|p| p.frequency == Frequency::High) {
+                Frequency::Low
+            } else {
+                Frequency::High
+            };
+        }
+    }
+
+    for output in &module.output {
+        pulses.push_back(Pulse {
+            from: to.clone(),
+            to: output.clone(),
+            frequency: new_frequency.clone(),
+        });
+    }
+
+    return Some(new_frequency);
+}
+
 fn part1(lines: &Vec<String>) {
     let mut modules = parse_modules(lines);
 
@@ -92,53 +143,14 @@ fn part1(lines: &Vec<String>) {
             frequency: Frequency::Low,
         });
 
-        while let Some(Pulse {
-            from,
-            to,
-            frequency,
-        }) = pulses.pop_front()
-        {
-            match frequency {
+        while let Some(pulse) = pulses.pop_front() {
+            match pulse.frequency {
                 Frequency::Low => low_pulses += 1,
                 Frequency::High => high_pulses += 1,
             }
 
-            if let Some(module) = modules.iter_mut().find(|m| m.name == to) {
-                let mut new_frequency = frequency.clone();
-
-                match &mut module.logic {
-                    Logic::None => (),
-                    Logic::FlipFlop(on) => {
-                        if frequency == Frequency::High {
-                            continue;
-                        }
-
-                        *on = !*on;
-
-                        new_frequency = match *on {
-                            true => Frequency::High,
-                            false => Frequency::Low,
-                        };
-                    }
-                    Logic::Conjunction(memory) => {
-                        let index = memory.iter().position(|p| p.from == from).unwrap();
-                        memory[index].frequency = frequency.clone();
-
-                        new_frequency = if memory.iter().all(|p| p.frequency == Frequency::High) {
-                            Frequency::Low
-                        } else {
-                            Frequency::High
-                        };
-                    }
-                }
-
-                for output in &module.output {
-                    pulses.push_back(Pulse {
-                        from: to.clone(),
-                        to: output.clone(),
-                        frequency: new_frequency.clone(),
-                    });
-                }
+            if let Some(module) = modules.iter_mut().find(|m| m.name == pulse.to) {
+                eval_pulse(module, &mut pulses, pulse);
             }
         }
     }
@@ -148,8 +160,63 @@ fn part1(lines: &Vec<String>) {
     println!("Part1: {:?}", sum);
 }
 
+fn gcd(a: usize, b: usize) -> usize {
+    let mut a = a;
+    let mut b = b;
+
+    while b != 0 {
+        let t = b;
+        b = a % b;
+        a = t;
+    }
+
+    a
+}
+
+fn lcm(a: usize, b: usize) -> usize {
+    (a * b) / gcd(a, b)
+}
+
 fn part2(lines: &Vec<String>) {
-    println!("Part2: {}", "");
+    let mut modules = parse_modules(lines);
+    let mut history = HashMap::new();
+
+    // Just testing out numbers until they all resolve the cn dependencies
+    for press in 1..10000 {
+        let mut pulses = VecDeque::new();
+        pulses.push_back(Pulse {
+            from: "".to_string(),
+            to: "broadcaster".to_string(),
+            frequency: Frequency::Low,
+        });
+
+        while let Some(pulse) = pulses.pop_front() {
+            // rx -> cn -> ...
+            // cn is the first conjuction module based on other modules
+            // likely this is the bottleneck
+            if pulse.to == "cn" && pulse.frequency == Frequency::High {
+                let key = pulse.from.clone();
+                if !history.contains_key(&key) {
+                    history.insert(key, press);
+                }
+            }
+
+            if let Some(module) = modules.iter_mut().find(|m| m.name == pulse.to) {
+                eval_pulse(module, &mut pulses, pulse);
+            }
+        }
+    }
+
+    let mut multiple = None;
+    for press in history.values() {
+        if let Some(m) = multiple {
+            multiple = Some(lcm(m, *press));
+        } else {
+            multiple = Some(*press);
+        }
+    }
+
+    println!("Part2: {:?}", multiple);
 }
 
 fn main() {
