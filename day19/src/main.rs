@@ -43,7 +43,7 @@ struct Sorter {
     conditions: Vec<Condition>,
 }
 
-type Part = [i64; 4];
+type Part = [i64; Category::S as usize + 1];
 
 fn parse_sorter(line: &String) -> Sorter {
     // Example of input mjv{x<2089:R,x>2415:R,x<2280:A,R}
