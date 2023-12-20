@@ -181,6 +181,9 @@ fn part2(lines: &Vec<String>) {
     let mut modules = parse_modules(lines);
     let mut history = HashMap::new();
 
+    // This just searches for the first split in the circuit
+    // This is likely the number we need to lcm since
+    // The resulting number would be too big otherwise
     let mut dependencies = vec!["rx".to_string()];
     while let Some(dependency) = dependencies.pop() {
         let module = modules
